@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Кейс-Задание Кузьмин А.Л.</title>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <script src="js/jquery_min.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-10">
+            <table id="mainTable" class="table table-sm" bgcolor="yellow" bordercolor="black" border="1">
+                <thead>
+                <tr align="center" bordercolor="black" border="1">
+                    <th>A</th>
+                    <th>B</th>
+                    <th>C</th>
+                    <th>D</th>
+                    <th>E</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div id="combo0" class="col-2" align="right"><p>A:  <select id="sel0">
+            <option value='nothing'>"-----"</option>
+            <option value='krit'>"Критерий"</option>
+            <option value='sum'>"Сумма"</option>
+            <option value='max'>"Макс."</option>
+            <option value='min'>"Мин."</option>
+            <option value='konkat'>"Конкат"</option>
+        </select></p></div>
+        <div id="combo1" class="col-2" align="right"><p>B:  <select id="sel1"></select></p></div>
+        <div id="combo2" class="col-2" align="right"><p>C:  <select id="sel2"></select></p></div>
+        <div id="combo3" class="col-2" align="right"><p>D:  <select id="sel3"></select></p></div>
+        <div id="combo4" class="col-2" align="right"><p>E:  <select id="sel4"></select></p><br>
+            <button id="but1">Сгруппировать</button><br>
+        </div>
+    </div>
+</div>
+<br>
+<div class="container">
+    <div class="row justify-content-left">
+        <div class="col-1"></div>
+        <div class="col"><p>Результат</p></div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-10">
+            <table id="result" class="table table-sm" bgcolor="silver" border="1">
+                <thead>
+                <tr></tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+     $(document).ready( function(){
+     //создание элементов страницы
+     //константы количества строк и столбцов
+    const countRows = 10;
+    const countCols = 5;
+    //создание основной таблицы
+    var table = $("#mainTable tbody");
+    for(var ind=0; ind < countRows; ind++) {
+        var tr = $("<tr>").attr("id", "row" + ind);
+        for(var indCol=0; indCol < countCols; indCol++) {
+            tr.append($("<td>").append($("<input type='text'>")
+            .attr("id", "input" + ind + "_" + indCol)));
+        }
+        table.append(tr);
+    }
+        //клонируем раскрывающиеся списки
+        var sel = $("select#sel0");
+        for(var ind=1; ind < countCols; ind++) {
+            $("select#sel" + ind).append($("select#sel0 > option").clone());
+        }
+
+        //установка функции, обрабатывающей нажатие кнопки
+    $('#but1').click(function(){
+    //result- результирующий массив
+    //grCols-массив индексов группировачных столбцов по критерию
+    //execCols-массив индексов обрабатываемых столбцов
+    //headNamesGr,headNamesEx- массивы с заголовками группировочных и обрабатываемых столбцов
+        var result = [];
+        var grCols = [];
+        var execCols = [];
+        var table = $("#mainTable thead");
+        var headNamesGr = [];
+        var headNamesEx = [];
+        //выбираем элементы для выбора способа использования каждой из колонок
+        $("select[id ^= sel]").each(function(indx, element){
+            if ($(element).val() === "krit") {
+                grCols.push($(element).attr("id").replace("sel", ""));
+                headNamesGr.push($($("th", table)[parseInt(grCols[grCols.length - 1])]).text());
+            } else if ($(element).val() !== "nothing") {
+                execCol = {
+                    number: $(element).attr("id").replace("sel", ""),
+                    method: $(element).val()
+                };
+                execCols.push(execCol);
+                headNamesEx.push($($("th", table)[parseInt(execCols[execCols.length - 1].number)]).text());
+            }
+        });
+        // Перебираем строки основной таблицы для группирования по критерию и выполнению операций
+        for(var indRow = 0; indRow < countRows; indRow++) {
+                var resultEl = null;
+                var grValues = {};
+                $(grCols).each(function(indGr, elGr) {
+                    grValues["gr" + indGr] = $("input#input" + indRow + "_" + elGr).val();
+                });
+                //производим поиск в результирующем массиве элемента соответстующего группировке
+                $(result).each(function(indR, elR) {
+                    var isFined = true;
+                    for (key in grValues) {
+                        if (elR[key] !== grValues[key]) {
+                            isFined = false;
+                        }
+                    }
+                    if (isFined === true) {
+                        resultEl = elR;
+                    }
+                });
+                // Если не нашли элемент, то добавляем в результирующий массив
+                if (resultEl === null) {
+                    resultEl = {};
+                    $(grCols).each(function(indGr, elGr) {
+                        resultEl["gr" + indGr] = $("input#input" + indRow + "_" + elGr).val();
+                    });
+                    result.push(resultEl);
+                }
+                // выполняем операции
+                $(execCols).each(function(indEx, elEx) {
+                    var value = $("input#input" + indRow + "_" + elEx.number).val();
+                    var elValue = resultEl["ex" + elEx.number];
+                    switch(elEx.method) {
+                        case "sum":
+                            resultEl["ex" + elEx.number] = elValue !== undefined ?
+                                parseFloat(elValue) + parseFloat(value) : parseFloat(value);
+                        break;
+                        case "max":
+                            resultEl["ex" + elEx.number] = elValue !== undefined ?
+                                Math.max(parseFloat(elValue), parseFloat(value)) : parseFloat(value);
+                        break;
+                        case "min":
+                            resultEl["ex" + elEx.number] = elValue !== undefined ?
+                                Math.min(parseFloat(elValue), parseFloat(value)) : parseFloat(value);
+                        break;
+                        case "konkat":
+                            resultEl["ex" + elEx.number] = elValue !== undefined ? elValue.concat(value) : value;
+                        break;
+                    }
+                })
+        }
+        //вызываем функцию для отрисовки и формирования результирующей таблицы
+        paintResultTable(result, grCols.length + execCols.length, headNamesGr.concat(headNamesEx));
+     });
+});
+
+function paintResultTable(data, countCols, headNames) {
+    const countRows = data.length;
+    var header = $("#result thead");
+    //обнуляем в случае повторного нажатия кнопки
+    $("tr", header).empty();
+    //формирование заголовка
+    $(headNames).each(function(ind, el) {
+        var th = $("<th>").text(el);
+        $("tr", header).append(th);
+    });
+    //формирование тела таблицы
+    var table = $("#result tbody").attr("class", "bgcolor='silver'");
+    //обнуляем в случае повторного нажатия кнопки
+    table.empty();
+        for(var ind=0; ind < countRows; ind++) {
+            var tr = $("<tr>").attr("id", "rowRes" + ind);
+            for(var indCol = 0; indCol < countCols; indCol++) {
+                tr.append($("<td>"));
+            }
+            var indCol = 0;
+            for(key in data[ind]) {
+                $($("td", tr)[indCol++]).text(data[ind][key]);
+            }
+            table.append(tr);
+    }
+}
+</script>
+</body>
+</html>
